@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Grand XO Game Offline vs Computer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      overflow: hidden;
+    }
+    h1 {
+      font-size: 3.5rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(255,255,255,0.7);
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 120px);
+      grid-gap: 20px;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 30px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      user-select: none;
+    }
+    .cell {
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 25px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 5rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+      transition: background 0.3s, transform 0.2s;
+    }
+    .cell:hover:not(.disabled) {
+      background: rgba(255, 255, 255, 0.4);
+      transform: scale(1.1);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.5);
+    }
+    .cell.disabled {
+      cursor: default;
+      background: rgba(255, 255, 255, 0.1);
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    #status {
+      margin: 25px 0;
+      font-size: 1.4rem;
+      text-shadow: 0 0 5px rgba(0,0,0,0.6);
+    }
+    #resetBtn {
+      background: #8e67e6;
+      border: none;
+      border-radius: 30px;
+      padding: 15px 50px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: white;
+      box-shadow: 0 8px 20px rgba(142,103,230,0.7);
+      cursor: pointer;
+      transition: background 0.4s, box-shadow 0.4s;
+      user-select: none;
+    }
+    #resetBtn:hover {
+      background: #a382f4;
+      box-shadow: 0 14px 30px rgba(163,130,244,0.9);
+    }
+    @media (max-width: 500px) {
+      #board {
+        grid-template-columns: repeat(3, 80px);
+        grid-gap: 15px;
+        padding: 20px;
+      }
+      .cell {
+        width: 80px;
+        height: 80px;
+        font-size: 3rem;
+        border-radius: 15px;
+      }
+      #resetBtn {
+        padding: 12px 30px;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Grand XO Game Offline</h1>
+  <div id="board"></div>
+  <div id="status">Your turn</div>
+  <button id="resetBtn">Reset Game</button>
+
+  <script>
+    const boardDiv = document.getElementById('board');
+    const statusDiv = document.getElementById('status');
+    const resetBtn = document.getElementById('resetBtn');
+
+    let board = Array(9).fill('');
+    let playerTurn = 'X';
+    let gameActive = true;
+
+    function createBoard() {
+      boardDiv.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = i;
+        cell.addEventListener('click', playerMove);
+        boardDiv.appendChild(cell);
+      }
+    }
+
+    function playerMove(e) {
+      const index = e.target.dataset.index;
+      if (board[index] === '' && gameActive && playerTurn === 'X') {
+        makeMove(index, 'X');
+        if (!checkGameOver()) {
+          playerTurn = 'O';
+          statusDiv.textContent = "Computer's turn...";
+          setTimeout(computerMove, 600);
+        }
+      }
+    }
+
+    function computerMove() {
+      if (!gameActive) return;
+      let emptyCells = [];
+      board.forEach((val, idx) => {
+        if (val === '') emptyCells.push(idx);
+      });
+      if (emptyCells.length === 0) return;
+      const move = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      makeMove(move, 'O');
+      if (!checkGameOver()) {
+        playerTurn = 'X';
+        statusDiv.textContent = "Your turn";
+      }
+    }
+
+    function makeMove(index, player) {
+      board[index] = player;
+      boardDiv.children[index].textContent = player;
+      boardDiv.children[index].classList.add('disabled');
+    }
+
+    function checkGameOver() {
+      const winPatterns = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      for (const [a,b,c] of winPatterns) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          gameActive = false;
+          statusDiv.textContent = `${board[a]} wins!`;
+          disableBoard();
+          return true;
+        }
+      }
+      if (!board.includes('')) {
+        gameActive = false;
+        statusDiv.textContent = "It's a draw!";
+        return true;
+      }
+      return false;
+    }
+
+    function disableBoard() {
+      for (const cell of boardDiv.children) {
+        cell.classList.add('disabled');
+      }
+    }
+
+    resetBtn.addEventListener('click', () => {
+      board = Array(9).fill('');
+      playerTurn = 'X';
+      gameActive = true;
+      createBoard();
+      statusDiv.textContent = "Your turn";
+    });
+
+    createBoard();
+  </script>
+</body>
+</html>
